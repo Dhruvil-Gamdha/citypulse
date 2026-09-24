@@ -1,126 +1,48 @@
 const cityCatalog = {
-  delhi: { name: 'Delhi, India', lat: 28.61, lon: 77.21, base: { traffic: [88, 72, 61, 79], water: [68, 82, 54, 76], waste: [74, 63, 49, 81] } },
-  mumbai: { name: 'Mumbai, India', lat: 19.07, lon: 72.88, base: { traffic: [82, 67, 55, 73], water: [78, 69, 86, 61], waste: [64, 76, 58, 70] } },
-  bengaluru: { name: 'Bengaluru, India', lat: 12.97, lon: 77.59, base: { traffic: [76, 84, 49, 68], water: [82, 74, 65, 89], waste: [71, 55, 78, 63] } },
-  london: { name: 'London, UK', lat: 51.51, lon: -0.13, base: { traffic: [58, 69, 44, 62], water: [91, 88, 84, 94], waste: [86, 79, 73, 90] } },
-  newyork: { name: 'New York, USA', lat: 40.71, lon: -74.01, base: { traffic: [73, 81, 57, 65], water: [88, 79, 91, 84], waste: [67, 75, 62, 71] } }
+  delhi: { name: 'Delhi, India', lat: 28.61, lon: 77.21, base: { traffic: [88,72,61,79], water: [68,82,54,76], waste: [74,63,49,81] } },
+  mumbai: { name: 'Mumbai, India', lat: 19.07, lon: 72.88, base: { traffic: [82,67,55,73], water: [78,69,86,61], waste: [64,76,58,70] } },
+  bengaluru: { name: 'Bengaluru, India', lat: 12.97, lon: 77.59, base: { traffic: [76,84,49,68], water: [82,74,65,89], waste: [71,55,78,63] } },
+  kolkata: { name: 'Kolkata, India', lat: 22.57, lon: 88.36, base: { traffic: [79,74,66,82], water: [64,71,58,69], waste: [60,73,52,77] } },
+  hyderabad: { name: 'Hyderabad, India', lat: 17.39, lon: 78.49, base: { traffic: [69,81,57,64], water: [75,80,72,84], waste: [77,68,71,73] } },
+  london: { name: 'London, UK', lat: 51.51, lon: -0.13, base: { traffic: [58,69,44,62], water: [91,88,84,94], waste: [86,79,73,90] } },
+  newyork: { name: 'New York, USA', lat: 40.71, lon: -74.01, base: { traffic: [73,81,57,65], water: [88,79,91,84], waste: [67,75,62,71] } },
+  toronto: { name: 'Toronto, Canada', lat: 43.65, lon: -79.38, base: { traffic: [62,70,51,59], water: [93,90,87,95], waste: [88,82,79,91] } },
+  singapore: { name: 'Singapore', lat: 1.35, lon: 103.82, base: { traffic: [54,61,47,58], water: [95,94,92,96], waste: [91,89,84,93] } },
+  sydney: { name: 'Sydney, Australia', lat: -33.87, lon: 151.21, base: { traffic: [49,57,42,53], water: [92,89,94,90], waste: [87,83,80,88] } },
+  dubai: { name: 'Dubai, UAE', lat: 25.20, lon: 55.27, base: { traffic: [67,76,59,70], water: [73,78,81,76], waste: [79,74,69,82] } }
 };
-
-const areaNames = ['North District', 'Downtown Core', 'Market Ward', 'Riverside'];
-const markerPositions = [[20, 22], [56, 35], [35, 68], [73, 70]];
-const metricConfig = {
-  air: { label: 'Air quality', title: 'Air quality across selected city', unit: 'AQI', source: 'Air quality is fetched live from Open-Meteo. Other indicators use the built-in city demo dataset until a civic data API is connected.' },
-  traffic: { label: 'Traffic', title: 'Traffic congestion across selected city', unit: '% congestion', source: 'Traffic values are a representative demo layer. Connect a traffic provider such as HERE, TomTom, or Google for live road speeds.' },
-  water: { label: 'Water quality', title: 'Water quality across selected city', unit: 'quality score', source: 'Water values are a representative demo layer. Connect your municipal water sensor API for live readings.' },
-  waste: { label: 'Waste', title: 'Waste service coverage across selected city', unit: 'service score', source: 'Waste values are a representative demo layer. Connect a city sanitation API for live collection status.' }
-};
-
-let selectedCity = 'delhi';
-let selectedMetric = 'air';
-let liveAirQuality = null;
-
-const $ = (id) => document.getElementById(id);
+const areas = ['North District','Downtown Core','Market Ward','Riverside'];
+const positions = [[20,22],[56,35],[35,68],[73,70]];
+const config = { air:{label:'Air quality',unit:'AQI',source:'Air quality is fetched live from Open-Meteo. Other indicators use the city demo dataset.'}, traffic:{label:'Traffic',unit:'% congestion',source:'Traffic values are representative demo data.'}, water:{label:'Water quality',unit:'quality score',source:'Water values are representative demo data.'}, waste:{label:'Waste',unit:'service score',source:'Waste values are representative demo data.'} };
+let selectedCity = 'delhi'; let selectedMetric = 'air'; let liveAir = null;
+const $ = id => document.getElementById(id);
 const citySelect = $('citySelect');
-
-Object.entries(cityCatalog).forEach(([key, city]) => { citySelect.add(new Option(city.name, key)); });
+Object.entries(cityCatalog).forEach(([key, city]) => citySelect.add(new Option(city.name, key)));
 citySelect.value = selectedCity;
-
-function statusFor(value, metric) {
-  if (metric === 'air') return value <= 50 ? 'Good' : value <= 100 ? 'Moderate' : value <= 150 ? 'Poor' : 'Critical';
-  return value >= 80 ? 'Good' : value >= 60 ? 'Moderate' : value >= 40 ? 'Poor' : 'Critical';
-}
-function statusClass(status) { return `marker-${status.toLowerCase()}`; }
-function colorFor(status) { return ({ Good: '#4ad298', Moderate: '#ffc857', Poor: '#ff6f7d', Critical: '#bf3eff' })[status]; }
-function valuesFor(metric) {
-  if (metric === 'air' && liveAirQuality) return liveAirQuality;
-  return cityCatalog[selectedCity].base[metric];
-}
-function average(values) { return Math.round(values.reduce((a, b) => a + b, 0) / values.length); }
-
-async function fetchLiveAirQuality() {
-  const city = cityCatalog[selectedCity];
-  $('dataStatus').textContent = 'Refreshing…';
-  try {
-    const url = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${city.lat}&longitude=${city.lon}&current=us_aqi,pm2_5&timezone=auto`;
-    const response = await fetch(url);
-    if (!response.ok) throw new Error('Air quality request failed');
-    const result = await response.json();
-    const current = Number(result.current?.us_aqi);
-    if (!Number.isFinite(current)) throw new Error('No AQI value');
-    liveAirQuality = [Math.max(0, current - 18), Math.max(0, current - 5), current + 12, current - 9].map(Math.round);
-    $('dataStatus').textContent = 'Live air data';
-  } catch (error) {
-    liveAirQuality = null;
-    $('dataStatus').textContent = 'Demo fallback';
-  }
-  renderDashboard();
-}
-
-function renderMap(values) {
-  const map = $('cityMap');
-  map.querySelectorAll('.map-marker').forEach((marker) => marker.remove());
-  values.forEach((value, index) => {
-    const status = statusFor(value, selectedMetric);
-    const marker = document.createElement('button');
-    marker.className = `map-marker ${statusClass(status)}`;
-    marker.style.left = `${markerPositions[index][0]}%`;
-    marker.style.top = `${markerPositions[index][1]}%`;
-    marker.setAttribute('aria-label', `${areaNames[index]}: ${status}`);
-    marker.innerHTML = `<span class="marker-tooltip"><strong>${areaNames[index]}</strong><br>${metricConfig[selectedMetric].label}: ${value}${selectedMetric === 'air' ? ' AQI' : ''}<br>Status: ${status}</span>`;
-    map.appendChild(marker);
-  });
-}
-function renderLegend() {
-  $('mapLegend').innerHTML = ['Good', 'Moderate', 'Poor', 'Critical'].map((status) => `<div class="legend-entry"><span class="dot" style="background:${colorFor(status)}"></span>${status}</div>`).join('');
-}
-function renderCategories(values) {
-  $('categoryList').innerHTML = values.map((value, index) => { const status = statusFor(value, selectedMetric); const score = selectedMetric === 'air' ? Math.max(0, 100 - value) : value; return `<div class="category-row"><div><div class="category-meta"><strong>${areaNames[index]}</strong><span>${status}</span></div><div class="progress"><span class="progress-bar" style="width:${Math.min(100, score)}%;background:${colorFor(status)}"></span></div></div><strong>${value}${selectedMetric === 'air' ? ' AQI' : ''}</strong></div>`; }).join('');
-}
-function renderHotspots(values) {
-  const sorted = values.map((value, index) => ({ value, index })).sort((a, b) => selectedMetric === 'air' ? b.value - a.value : a.value - b.value);
-  $('hotspotList').innerHTML = sorted.map(({ value, index }) => { const status = statusFor(value, selectedMetric); return `<div class="hotspot-row"><div class="hotspot-meta"><strong>${areaNames[index]}</strong><span>${status}</span></div><div class="hotspot-indicator"><span class="dot" style="background:${colorFor(status)}"></span>${value}</div></div>`; }).join('');
-}
-function renderIssues(values) {
-  const sorted = values.map((value, index) => ({ value, index })).sort((a, b) => selectedMetric === 'air' ? b.value - a.value : a.value - b.value).slice(0, 4);
-  $('issueCards').innerHTML = sorted.map(({ value, index }) => { const status = statusFor(value, selectedMetric); const severity = status === 'Critical' || status === 'Poor' ? 'High' : status === 'Moderate' ? 'Medium' : 'Low'; return `<article class="issue-card"><div class="issue-card-head"><h4>${areaNames[index]}</h4><span class="severity sev-${severity.toLowerCase()}">${severity}</span></div><p>${metricConfig[selectedMetric].label} is currently ${status.toLowerCase()} in this mapped zone.</p><div class="impact"><span class="dot" style="background:${colorFor(status)}"></span>Reading: ${value} ${metricConfig[selectedMetric].unit}</div></article>`; }).join('');
-}
-function renderScores(values) {
-  const city = cityCatalog[selectedCity];
-  const scores = selectedMetric === 'air' ? { 'Selected indicator': Math.max(0, 100 - average(values)), 'Mobility': 82, 'Water safety': average(city.base.water), 'Public safety': 80 } : { [metricConfig[selectedMetric].label]: average(values), 'Mobility': Math.max(0, 100 - average(city.base.traffic)), 'Air quality': Math.max(0, 100 - (liveAirQuality ? average(liveAirQuality) : 70)), 'Water safety': average(city.base.water) };
-  $('scoreList').innerHTML = Object.entries(scores).map(([name, value], index) => `<div class="score-row"><div class="score-meta"><strong>${name}</strong><span>#${index + 1}</span></div><span class="score-value">${Math.round(value)}</span></div>`).join('');
-}
+const average = values => Math.round(values.reduce((a,b)=>a+b,0)/values.length);
+const statusFor = (v,m) => m === 'air' ? (v<=50?'Good':v<=100?'Moderate':v<=150?'Poor':'Critical') : (v>=80?'Good':v>=60?'Moderate':v>=40?'Poor':'Critical');
+const colorFor = s => ({Good:'#4ad298',Moderate:'#ffc857',Poor:'#ff6f7d',Critical:'#bf3eff'})[s];
+const valuesFor = m => m === 'air' && liveAir ? liveAir : (m === 'air' ? [35,48,61,42] : cityCatalog[selectedCity].base[m]);
 function renderDashboard() {
-  const config = metricConfig[selectedMetric];
-  const values = valuesFor(selectedMetric);
-  const avg = average(values);
-  $('mapTitle').textContent = `${config.label} across ${cityCatalog[selectedCity].name}`;
-  $('mixTitle').textContent = `${config.label} mix`;
-  $('categoryTitle').textContent = `${config.label} by area`;
-  $('issuesTitle').textContent = `${config.label} issues`;
-  $('scoreTitle').textContent = `${config.label} health factors`;
-  $('trendTitle').textContent = `${config.label} trend over 6 months`;
-  $('dataNote').textContent = config.source;
-  $('statOne').textContent = selectedMetric === 'air' ? `${Math.max(0, 100 - avg)}/100` : `${avg}/100`;
-  $('statOneLabel').textContent = `${config.label} score`;
-  $('statTwo').textContent = values.filter((value) => ['Poor', 'Critical'].includes(statusFor(value, selectedMetric))).length;
-  $('statTwoLabel').textContent = 'Areas needing attention';
-  $('statThree').textContent = `${avg}${selectedMetric === 'air' ? ' AQI' : ''}`;
-  $('statThreeLabel').textContent = 'Average reading';
-  $('statFour').textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  $('airValue').textContent = selectedMetric === 'air' ? statusFor(avg, 'air') : statusFor(average(values), selectedMetric);
-  $('airLabel').textContent = config.label;
-  $('donutValue').textContent = `${Math.round(values.filter((v) => ['Poor', 'Critical'].includes(statusFor(v, selectedMetric))).length / values.length * 100)}%`;
-  $('donutLabel').textContent = 'Needs attention';
-  $('donutChart').style.background = `conic-gradient(var(--red) 0 25%,var(--amber) 25% 52%,var(--blue) 52% 76%,var(--green) 76%)`;
-  $('issueLegend').innerHTML = values.map((value, index) => `<li class="legend-item"><div class="legend-label"><span class="legend-swatch" style="background:${colorFor(statusFor(value, selectedMetric))}"></span><span>${areaNames[index]}</span></div><strong>${value}${selectedMetric === 'air' ? ' AQI' : ''}</strong></li>`).join('');
-  renderMap(values); renderLegend(); renderCategories(values); renderHotspots(values); renderIssues(values); renderScores(values);
+  const values = valuesFor(selectedMetric), avg = average(values), city = cityCatalog[selectedCity], c = config[selectedMetric];
+  const attention = values.filter(v=>['Poor','Critical'].includes(statusFor(v,selectedMetric))).length;
+  $('mapTitle').textContent = `${c.label} across ${city.name}`; $('mixTitle').textContent = `${c.label} mix`; $('dataNote').textContent = c.source;
+  $('statOneLabel').textContent = `${c.label} score`; $('statOne').textContent = `${selectedMetric==='air'?Math.max(0,100-avg):avg}/100`; $('statTwo').textContent = attention; $('statThreeLabel').textContent = `Average ${c.label.toLowerCase()}`; $('statThree').textContent = `${avg}${selectedMetric==='air'?' AQI':''}`; $('statFour').textContent = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+  $('airValue').textContent = statusFor(avg,selectedMetric); $('airLabel').textContent = c.label; $('donutValue').textContent = `${Math.round(attention/values.length*100)}%`;
+  $('donutChart').style.background = `conic-gradient(#ff6f7d 0 ${attention/values.length*100}%,#ffc857 ${attention/values.length*100}% 55%,#6d8cff 55% 78%,#4ad298 78%)`;
+  $('mapLegend').innerHTML = ['Good','Moderate','Poor','Critical'].map(s=>`<span><i style="background:${colorFor(s)}"></i>${s}</span>`).join('');
+  $('cityMap').querySelectorAll('.map-marker').forEach(m=>m.remove());
+  values.forEach((value,i)=>{ const status=statusFor(value,selectedMetric); const marker=document.createElement('button'); marker.className=`map-marker ${status.toLowerCase()}`; marker.style.left=`${positions[i][0]}%`; marker.style.top=`${positions[i][1]}%`; marker.title=`${areas[i]}: ${value} ${c.unit}`; marker.innerHTML=`<span>${value}</span>`; $('cityMap').appendChild(marker); });
+  $('categoryList').innerHTML = values.map((v,i)=>`<div class="category-row"><div><strong>${areas[i]}</strong><span class="${statusFor(v,selectedMetric).toLowerCase()}">${statusFor(v,selectedMetric)}</span></div><div class="bar"><i style="width:${selectedMetric==='air'?Math.max(0,100-v):v}%;background:${colorFor(statusFor(v,selectedMetric))}"></i></div><b>${v}</b></div>`).join('');
+  const scores = {'Selected indicator':selectedMetric==='air'?Math.max(0,100-avg):avg,'Mobility':Math.round(average(city.base.traffic)),'Water safety':Math.round(average(city.base.water)),'Public services':Math.round(average(city.base.waste))};
+  $('scoreList').innerHTML = Object.entries(scores).map(([name,v])=>`<div class="score-row"><div><strong>${name}</strong><span>${v}/100</span></div><div class="bar"><i style="width:${v}%"></i></div></div>`).join('');
+  $('hotspotList').innerHTML = values.map((v,i)=>`<div><span class="dot" style="background:${colorFor(statusFor(v,selectedMetric))}"></span><b>${areas[i]}</b><small>${v} ${c.unit}</small></div>`).sort((a,b)=>b.textContent.localeCompare(a.textContent)).join('');
+  $('heroScore').textContent = Math.max(0,100-avg);
 }
-
-$('metricTabs').addEventListener('click', (event) => { const button = event.target.closest('.metric-tab'); if (!button) return; document.querySelectorAll('.metric-tab').forEach((tab) => tab.classList.remove('active')); button.classList.add('active'); selectedMetric = button.dataset.metric; renderDashboard(); if (selectedMetric === 'air') fetchLiveAirQuality(); });
-citySelect.addEventListener('change', () => { selectedCity = citySelect.value; liveAirQuality = null; renderDashboard(); fetchLiveAirQuality(); });
-$('jumpToMap').addEventListener('click', () => $('live-map').scrollIntoView({ behavior: 'smooth' }));
-$('reportButton').addEventListener('click', () => alert(`CityPulse report ready for ${cityCatalog[selectedCity].name}.`));
-$('downloadButton').addEventListener('click', () => alert('Connect a backend export endpoint to download verified city data.'));
-renderDashboard();
-fetchLiveAirQuality();
-setInterval(() => { if (selectedMetric === 'air') fetchLiveAirQuality(); }, 300000);
+async function fetchAir() { $('dataStatus').textContent='Refreshing…'; try { const city=cityCatalog[selectedCity]; const r=await fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${city.lat}&longitude=${city.lon}&current=us_aqi&timezone=auto`); if(!r.ok) throw Error(); const a=Number((await r.json()).current?.us_aqi); if(!Number.isFinite(a)) throw Error(); liveAir=[Math.max(0,a-18),Math.max(0,a-5),a+12,a-9].map(Math.round); $('dataStatus').textContent='Live air data'; } catch(e) { liveAir=null; $('dataStatus').textContent='Demo fallback'; } renderDashboard(); }
+$('metricTabs').addEventListener('click',e=>{const b=e.target.closest('.metric-tab');if(!b)return;selectedMetric=b.dataset.metric;document.querySelectorAll('.metric-tab').forEach(x=>x.classList.toggle('active',x===b));renderDashboard();if(selectedMetric==='air')fetchAir();});
+citySelect.addEventListener('change',()=>{selectedCity=citySelect.value;liveAir=null;renderDashboard();fetchAir();}); $('jumpToMap').onclick=()=> $('live-map').scrollIntoView({behavior:'smooth'});
+const modal=$('loginModal'); $('loginButton').onclick=()=>{modal.classList.remove('hidden');$('email').focus();}; $('closeLogin').onclick=()=>modal.classList.add('hidden'); modal.onclick=e=>{if(e.target===modal)modal.classList.add('hidden');};
+$('loginForm').onsubmit=e=>{e.preventDefault();if($('email').value==='demo@citypulse.app'&&$('password').value==='citypulse'){localStorage.setItem('citypulseUser',$('email').value);modal.classList.add('hidden');updateAuth();}else $('loginError').textContent='Use the demo credentials shown below.';};
+function updateAuth(){const user=localStorage.getItem('citypulseUser');$('signedInAs').textContent=user?`Signed in as ${user}`:'';$('loginButton').classList.toggle('hidden',!!user);$('logoutButton').classList.toggle('hidden',!user);} $('logoutButton').onclick=()=>{localStorage.removeItem('citypulseUser');updateAuth();};
+renderDashboard(); updateAuth(); fetchAir(); setInterval(()=>{if(selectedMetric==='air')fetchAir();},300000);
