@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CityPulse | City Health Dashboard</title>
+    <title>CityPulse | Live City Health Dashboard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -12,205 +12,34 @@
   <body>
     <div class="page-shell">
       <header class="topbar">
-        <div class="brand-wrap">
-          <div class="brand-mark">C</div>
-          <div>
-            <p class="eyebrow">Urban intelligence</p>
-            <h1>CityPulse</h1>
-          </div>
-        </div>
-
-        <nav class="main-nav" aria-label="Main navigation">
-          <a href="#overview">Overview</a>
-          <a href="#issues">Issues</a>
-          <a href="#health">Health</a>
-          <a href="#areas">Areas</a>
-        </nav>
-
-        <button class="cta-button">Generate report</button>
+        <div class="brand-wrap"><div class="brand-mark">C</div><div><p class="eyebrow">Urban intelligence</p><h1>CityPulse</h1></div></div>
+        <nav class="main-nav" aria-label="Main navigation"><a href="#overview">Overview</a><a href="#live-map">Live map</a><a href="#issues">Issues</a><a href="#health">Health</a></nav>
+        <button class="cta-button" id="reportButton">Generate report</button>
       </header>
 
       <main class="dashboard" id="overview">
         <section class="hero panel hero-panel">
-          <div class="hero-copy">
-            <p class="section-tag">City health overview</p>
-            <h2>Urban conditions are improving, but key pressure points remain.</h2>
-            <p class="muted">
-              The city is tracking above the regional baseline, yet public health,
-              transport, and waste systems need targeted intervention in the most
-              vulnerable districts.
-            </p>
-            <div class="hero-actions">
-              <button class="primary-btn">View city issues</button>
-              <button class="ghost-btn">Download summary</button>
-            </div>
-          </div>
-
-          <div class="hero-visual" aria-label="City health score diagram">
-            <div class="radial-ring">
-              <div class="ring-inner">
-                <strong>78</strong>
-                <span>Health index</span>
-              </div>
-            </div>
-            <div class="signal-stack">
-              <div class="signal-card">
-                <span class="dot dot-green"></span>
-                <div>
-                  <small>Air quality</small>
-                  <strong>Good</strong>
-                </div>
-              </div>
-              <div class="signal-card">
-                <span class="dot dot-amber"></span>
-                <div>
-                  <small>Traffic flow</small>
-                  <strong>Moderate</strong>
-                </div>
-              </div>
-            </div>
-          </div>
+          <div class="hero-copy"><p class="section-tag">City health overview</p><h2>See the pulse of your city, area by area.</h2><p class="muted">Switch cities and indicators to understand where traffic, pollution, water, and public services need attention.</p><div class="hero-actions"><button class="primary-btn" id="jumpToMap">Explore live map</button><button class="ghost-btn" id="downloadButton">Download summary</button></div></div>
+          <div class="hero-visual" aria-label="City health score diagram"><div class="radial-ring"><div class="ring-inner"><strong id="heroScore">78</strong><span>Health index</span></div></div><div class="signal-stack"><div class="signal-card"><span class="dot dot-green"></span><div><small id="airLabel">Air quality</small><strong id="airValue">Good</strong></div></div><div class="signal-card"><span class="dot dot-amber"></span><div><small>Data status</small><strong id="dataStatus">Loading live data</strong></div></div></div></div>
         </section>
 
-        <section class="stats-grid" aria-label="City health metrics">
-          <article class="panel stat-card accent-blue">
-            <p>City health score</p>
-            <h3>78/100</h3>
-            <span class="trend positive">+4.2% vs last quarter</span>
-          </article>
-          <article class="panel stat-card accent-red">
-            <p>Critical issues</p>
-            <h3>12</h3>
-            <span class="trend neutral">4 high-priority zones</span>
-          </article>
-          <article class="panel stat-card accent-purple">
-            <p>Public response time</p>
-            <h3>31 min</h3>
-            <span class="trend positive">-8 min improvement</span>
-          </article>
-          <article class="panel stat-card accent-green">
-            <p>Clean water access</p>
-            <h3>95%</h3>
-            <span class="trend positive">Stable delivery</span>
-          </article>
+        <section class="live-controls panel" aria-label="Live map controls">
+          <div><p class="section-tag">Live city monitor</p><h3>Choose a city and indicator</h3></div>
+          <div class="control-row"><label>City<select id="citySelect"></select></label><div class="metric-tabs" id="metricTabs" role="tablist" aria-label="Map indicator"><button class="metric-tab active" data-metric="air" role="tab">Air quality</button><button class="metric-tab" data-metric="traffic" role="tab">Traffic</button><button class="metric-tab" data-metric="water" role="tab">Water quality</button><button class="metric-tab" data-metric="waste" role="tab">Waste</button></div></div>
+          <p class="data-note"><span class="live-dot"></span><span id="dataNote">Air quality is fetched live from Open-Meteo. Other indicators use the built-in city demo dataset until a civic data API is connected.</span></p>
         </section>
 
-        <section class="content-grid">
-          <article class="panel issue-overview" id="issues">
-            <div class="panel-header">
-              <div>
-                <p class="section-tag">Issue mix</p>
-                <h3>Main city issues</h3>
-              </div>
-              <span class="badge badge-amber">Updated today</span>
-            </div>
+        <section class="stats-grid" aria-label="City health metrics"><article class="panel stat-card accent-blue"><p id="statOneLabel">City health score</p><h3 id="statOne">78/100</h3><span class="trend positive" id="statOneTrend">Live city index</span></article><article class="panel stat-card accent-red"><p id="statTwoLabel">Areas needing attention</p><h3 id="statTwo">4</h3><span class="trend neutral" id="statTwoTrend">Selected indicator</span></article><article class="panel stat-card accent-purple"><p id="statThreeLabel">Average reading</p><h3 id="statThree">—</h3><span class="trend positive" id="statThreeTrend">Across mapped areas</span></article><article class="panel stat-card accent-green"><p id="statFourLabel">Last updated</p><h3 id="statFour">Now</h3><span class="trend positive" id="statFourTrend">Auto refresh enabled</span></article></section>
 
-            <div class="donut-panel">
-              <div class="donut-chart" aria-label="Distribution of city issues">
-                <div class="donut-center">
-                  <strong>42%</strong>
-                  <span>High risk</span>
-                </div>
-              </div>
+        <section class="map-panel panel" id="live-map"><div class="panel-header"><div><p class="section-tag">Interactive city map</p><h3 id="mapTitle">Air quality across selected city</h3></div><span class="badge badge-live"><span class="live-dot"></span> LIVE</span></div><div class="map-layout"><div class="city-map" id="cityMap" aria-label="Interactive map of selected city"><div class="map-road road-a"></div><div class="map-road road-b"></div><div class="map-road road-c"></div><div class="map-river"></div><div class="map-label label-north">North</div><div class="map-label label-center">City center</div><div class="map-label label-south">South</div></div><aside class="map-legend"><h4 id="legendTitle">Air quality zones</h4><div id="mapLegend"></div><p class="map-help">Select an indicator above. The map, metrics, zones, and issue cards all update together.</p></aside></div></section>
 
-              <ul class="legend-list" id="issueLegend"></ul>
-            </div>
-          </article>
+        <section class="content-grid"><article class="panel issue-overview" id="issues"><div class="panel-header"><div><p class="section-tag">Indicator mix</p><h3 id="mixTitle">Air quality mix</h3></div><span class="badge badge-amber">Updated automatically</span></div><div class="donut-panel"><div class="donut-chart" id="donutChart"><div class="donut-center"><strong id="donutValue">42%</strong><span id="donutLabel">High risk</span></div></div><ul class="legend-list" id="issueLegend"></ul></div></article><article class="panel category-panel"><div class="panel-header"><div><p class="section-tag">Mapped zones</p><h3 id="categoryTitle">Air quality by area</h3></div></div><div id="categoryList" class="category-list"></div></article></section>
 
-          <article class="panel category-panel">
-            <div class="panel-header">
-              <div>
-                <p class="section-tag">Priority areas</p>
-                <h3>Top issue categories</h3>
-              </div>
-            </div>
-            <div id="categoryList" class="category-list"></div>
-          </article>
-        </section>
+        <section class="detail-grid" id="health"><article class="panel trend-panel"><div class="panel-header"><div><p class="section-tag">City trend</p><h3 id="trendTitle">Health index over 6 months</h3></div></div><div class="chart-wrap"><svg viewBox="0 0 540 220" preserveAspectRatio="none" aria-label="City trend chart"><defs><linearGradient id="lineGradient" x1="0%" x2="100%" y1="0%" y2="0%"><stop offset="0%" stop-color="#6d8cff" /><stop offset="100%" stop-color="#3dd9b3" /></linearGradient></defs><g class="grid-lines"><line x1="0" y1="25" x2="540" y2="25" /><line x1="0" y1="73" x2="540" y2="73" /><line x1="0" y1="120" x2="540" y2="120" /><line x1="0" y1="168" x2="540" y2="168" /><line x1="0" y1="215" x2="540" y2="215" /></g><path d="M0,160 C60,155,90,120,140,128 S225,98,265,104 S345,80,410,92 S490,70,540,60" class="trend-line"></path><g class="chart-points"><circle cx="0" cy="160" r="4" /><circle cx="90" cy="120" r="4" /><circle cx="180" cy="104" r="4" /><circle cx="270" cy="118" r="4" /><circle cx="360" cy="96" r="4" /><circle cx="450" cy="74" r="4" /><circle cx="540" cy="60" r="4" /></g></svg><div class="axis-labels"><span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span><span>Jun</span></div></div></article><article class="panel hotspot-panel" id="areas"><div class="panel-header"><div><p class="section-tag">Hotspots</p><h3>Priority neighborhoods</h3></div></div><div id="hotspotList" class="hotspot-list"></div></article></section>
 
-        <section class="detail-grid" id="health">
-          <article class="panel trend-panel">
-            <div class="panel-header">
-              <div>
-                <p class="section-tag">City trend</p>
-                <h3>Health index over 6 months</h3>
-              </div>
-            </div>
-            <div class="chart-wrap">
-              <svg viewBox="0 0 540 220" preserveAspectRatio="none" aria-label="Health index chart">
-                <defs>
-                  <linearGradient id="lineGradient" x1="0%" x2="100%" y1="0%" y2="0%">
-                    <stop offset="0%" stop-color="#6d8cff" />
-                    <stop offset="100%" stop-color="#3dd9b3" />
-                  </linearGradient>
-                </defs>
-                <g class="grid-lines">
-                  <line x1="0" y1="25" x2="540" y2="25" />
-                  <line x1="0" y1="73" x2="540" y2="73" />
-                  <line x1="0" y1="120" x2="540" y2="120" />
-                  <line x1="0" y1="168" x2="540" y2="168" />
-                  <line x1="0" y1="215" x2="540" y2="215" />
-                </g>
-                <path
-                  d="M0,160 C60,155,90,120,140,128 S225,98,265,104 S345,80,410,92 S490,70,540,60"
-                  class="trend-line"
-                ></path>
-                <g class="chart-points">
-                  <circle cx="0" cy="160" r="4" />
-                  <circle cx="90" cy="120" r="4" />
-                  <circle cx="180" cy="104" r="4" />
-                  <circle cx="270" cy="118" r="4" />
-                  <circle cx="360" cy="96" r="4" />
-                  <circle cx="450" cy="74" r="4" />
-                  <circle cx="540" cy="60" r="4" />
-                </g>
-              </svg>
-              <div class="axis-labels">
-                <span>Jan</span>
-                <span>Feb</span>
-                <span>Mar</span>
-                <span>Apr</span>
-                <span>May</span>
-                <span>Jun</span>
-              </div>
-            </div>
-          </article>
-
-          <article class="panel hotspot-panel" id="areas">
-            <div class="panel-header">
-              <div>
-                <p class="section-tag">Hotspots</p>
-                <h3>Priority neighborhoods</h3>
-              </div>
-            </div>
-            <div id="hotspotList" class="hotspot-list"></div>
-          </article>
-        </section>
-
-        <section class="bottom-grid">
-          <article class="panel issues-grid-panel">
-            <div class="panel-header">
-              <div>
-                <p class="section-tag">Current focus</p>
-                <h3>Most pressing city issues</h3>
-              </div>
-            </div>
-            <div id="issueCards" class="issue-cards"></div>
-          </article>
-
-          <article class="panel score-panel">
-            <div class="panel-header">
-              <div>
-                <p class="section-tag">Quality breakdown</p>
-                <h3>City health factors</h3>
-              </div>
-            </div>
-            <div class="score-roster" id="scoreList"></div>
-          </article>
-        </section>
+        <section class="bottom-grid"><article class="panel issues-grid-panel"><div class="panel-header"><div><p class="section-tag">Current focus</p><h3 id="issuesTitle">Air quality issues</h3></div></div><div id="issueCards" class="issue-cards"></div></article><article class="panel score-panel"><div class="panel-header"><div><p class="section-tag">Quality breakdown</p><h3 id="scoreTitle">City health factors</h3></div></div><div class="score-roster" id="scoreList"></div></article></section>
       </main>
     </div>
-
     <script src="script.js"></script>
   </body>
 </html>
